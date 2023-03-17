@@ -4,10 +4,12 @@ const usersRouter = new RouterUsers()
 
 const usersEndPoints = {
     fetchUsers: '/fetch',
-    blocking: '/blocking',
+    blockingUsers: '/status',
+    deleteUsers: '/delete',
 }
 
 usersRouter.get(usersEndPoints.fetchUsers, usersController.fetchUsers)
-usersRouter.put(usersEndPoints.blocking, usersController.blockingUsers)
+usersRouter.put(usersEndPoints.blockingUsers, usersController.changeStatusUsers)
+usersRouter.delete(usersEndPoints.deleteUsers, usersController.deleteUsers)
 
 module.exports = usersRouter

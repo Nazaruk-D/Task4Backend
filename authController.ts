@@ -69,38 +69,47 @@ class authController {
     async login(req: any, res: any) {
         try {
             const {email, password} = req.body;
-            const token = jwt.sign({email}, 'secret');
-            const query = `SELECT * FROM Users WHERE email = '${email}'`;
-            connection.query(query, (error: any, results: any) => {
-                if (error) throw error;
-                if (results.length === 1) {
-                    const user = results[0];
-                    const userData = {
-                        id: user.id,
-                        email: user.email,
-                        name: user.name,
-                        status: user.status,
-                        createdAt: user.created_at,
-                        updatedAt: user.last_online
-                    };
-                    bcrypt.compare(password, user.password_hash, (error: any, match: any) => {
+            const updateLoginDate = `UPDATE Users SET last_online=CURRENT_TIMESTAMP WHERE email='${email}'`;
+            connection.query(updateLoginDate, (error: any, results: any) => {
+                if(error) {
+                    results.status(400).json({message: 'Login error', statusCode: 400})
+                } else {
+                    const query = `SELECT * FROM Users WHERE email = '${email}'`;
+                    connection.query(query, (error: any, results: any) => {
+                        const token = jwt.sign({email}, 'secret');
                         if (error) throw error;
-                        if (match) {
-                            res.cookie('token', token, {
-                                expires: new Date(Date.now() + (3600 * 1000 * 24 * 180 * 1)),
-                                sameSite: 'none',
-                                secure: "true",
-                                httpOnly: true,
-                            })
-                            res.status(200).json({message: 'Login successful', user: userData, statusCode: 200});
+                        if (results.length === 1) {
+                            const user = results[0];
+                            const userData = {
+                                id: user.id,
+                                email: user.email,
+                                name: user.name,
+                                status: user.status,
+                                createdAt: user.created_at,
+                                updatedAt: user.last_online
+                            };
+                            bcrypt.compare(password, user.password_hash, (error: any, match: any) => {
+                                if (error) throw error;
+                                if (match) {
+                                    res.cookie('token', token, {
+                                        expires: new Date(Date.now() + (3600 * 1000 * 24 * 180 * 1)),
+                                        sameSite: 'none',
+                                        secure: "true",
+                                        httpOnly: true,
+                                    })
+                                    res.status(200).json({message: 'Login successful', user: userData, statusCode: 200});
+                                } else {
+                                    return res.status(401).json({message: 'Incorrect email or password', statusCode: 401});
+                                }
+                            });
                         } else {
                             return res.status(401).json({message: 'Incorrect email or password', statusCode: 401});
                         }
                     });
-                } else {
-                    return res.status(401).json({message: 'Incorrect email or password', statusCode: 401});
                 }
+
             });
+
             return console.log('Connection closed')
         } catch (e) {
             res.status(400).json({message: 'Login error', statusCode: 400})

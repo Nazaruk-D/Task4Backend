@@ -14,13 +14,6 @@ const bcrypt = require('bcrypt');
 class usersController {
     fetchUsers(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            // try {
-            //     const allLetters = "SELECT * FROM letters"
-            //     connection.query(allLetters, (err: any, res: any) => {
-            //         res.status(200).json(res)
-            //         return console.log('Connection closed')
-            //     })
-            // }
             try {
                 const getUsersQuery = "SELECT * FROM Users";
                 index_1.connection.query(getUsersQuery, (error, results) => {
@@ -28,10 +21,8 @@ class usersController {
                         return res.status(400).json({ message: 'Error getting users', statusCode: 400 });
                     }
                     else {
-                        const users = results;
-                        const usersData = {};
-                        usersData.users = users;
-                        return res.status(200).send({ message: 'Getting users successfully', data: usersData, statusCode: 200 });
+                        const users = results.map((u) => (Object.assign(Object.assign({}, u), { id: u.id, name: u.name, email: u.email, createdAt: u.created_at, loginData: u.last_online, status: u.status })));
+                        return res.status(200).send({ message: 'Getting users successfully', data: users, statusCode: 200 });
                     }
                 });
             }
@@ -41,25 +32,50 @@ class usersController {
             }
         });
     }
-    blockingUsers(req, res) {
+    changeStatusUsers(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const { id, password } = req.body;
-                const salt = yield bcrypt.genSalt(10);
-                const hashedPassword = yield bcrypt.hash(password, salt);
-                const updateUserPasswordQuery = `UPDATE Users SET password_hash='${hashedPassword}', updated_at=CURRENT_TIMESTAMP WHERE id=${id}`;
-                index_1.connection.query(updateUserPasswordQuery, (error, results) => {
-                    if (error) {
-                        return res.status(500).json({ message: 'Error updating user password' });
-                    }
-                    else {
-                        return res.status(200).send({ message: 'User password updated successfully' });
-                    }
-                });
-                return console.log('Connection closed');
+                const { ids, status } = req.body;
+                for (const id of ids) {
+                    yield new Promise(resolve => {
+                        index_1.connection.query(`UPDATE Users SET status='${status}' WHERE id=${id}`, (error, results) => {
+                            if (error) {
+                                return res.status(500).send({ message: 'Error updating blocked status', statusCode: 500 });
+                            }
+                            else {
+                                resolve(id);
+                            }
+                        });
+                    });
+                    yield new Promise(resolve => setTimeout(resolve, 50));
+                }
+                res.status(200).json({ message: `Users ${status}`, data: { ids, status }, statusCode: 201 });
             }
             catch (e) {
-                console.log(e);
+                res.status(400).json({ message: 'Update data error', statusCode: 400 });
+            }
+        });
+    }
+    deleteUsers(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { ids } = req.body;
+                for (const id of ids) {
+                    yield new Promise(resolve => {
+                        index_1.connection.query(`DELETE FROM Users WHERE id=${id}`, (error, results) => {
+                            if (error) {
+                                return res.status(500).send({ message: 'Error deleting users', statusCode: 500 });
+                            }
+                            else {
+                                resolve(id);
+                            }
+                        });
+                    });
+                    yield new Promise(resolve => setTimeout(resolve, 50));
+                }
+                res.status(200).json({ message: `Users deleting`, data: { ids }, statusCode: 201 });
+            }
+            catch (e) {
                 res.status(400).json({ message: 'Update data error', statusCode: 400 });
             }
         });
