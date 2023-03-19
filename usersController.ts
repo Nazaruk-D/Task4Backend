@@ -1,7 +1,4 @@
 import {connection} from "./index";
-import {log} from "util";
-
-const bcrypt = require('bcrypt');
 
 class usersController {
     async fetchUsers(req: any, res: any) {

@@ -27,6 +27,9 @@ class authController {
                 index_1.connection.query(userExistsQuery, (error, results) => {
                     if (error)
                         throw error;
+                    if (results[0].status === "blocked") {
+                        return res.status(401).json({ message: 'User blocked', statusCode: 401 });
+                    }
                     if (results.length === 1) {
                         const user = results[0];
                         const userData = {
@@ -37,7 +40,7 @@ class authController {
                             createdAt: user.created_at,
                             updatedAt: user.last_online
                         };
-                        return res.status(200).json({ user: userData, statusCode: 200 });
+                        return res.status(200).json({ data: userData, statusCode: 200 });
                     }
                     else {
                         return res.status(401).json({ message: 'Unauthorized in user', statusCode: 401 });
@@ -99,6 +102,9 @@ class authController {
                             if (error)
                                 throw error;
                             if (results.length === 1) {
+                                if (results[0].status === "blocked") {
+                                    return res.status(401).json({ message: 'User blocked', statusCode: 401 });
+                                }
                                 const user = results[0];
                                 const userData = {
                                     id: user.id,
